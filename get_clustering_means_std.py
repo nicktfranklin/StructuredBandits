@@ -103,7 +103,7 @@ if __name__ == "__main__":
 
     # shifted
     generate(
-        raw_data_path    = 'Data/exp_shifted/datashifted.csv',
+        raw_data_path    = 'Data/exp_shifted/datashifted_withoffset.csv',
         fit_alphas_path  = 'Data/alphas/exp_shifted_alphas.pkl',
         output_file_path = 'Data/exp_shifted/exp_shifted_clustering_means_std.csv',
         k=k,

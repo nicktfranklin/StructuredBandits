@@ -23,13 +23,13 @@ def augment_assignments(cluster_assignments, new_context):
 
 def enumerate_assignments(max_context_number):
     """
-     enumerate all possible assignments of contexts to clusters for a fixed number of contexts.
-     Has the hard assumption that the first context belongs to cluster #1, to remove redundant
-     assignments that differ in labeling.
+     enumerate all possible assignments of contexts to clusters for a fixed
+     number of contexts.  Has the hard assumption that the first context belongs
+     to cluster #1, to remove redundant assignments that differ in labeling.
 
     :param max_context_number: int
-    :return:     list of lists, each a function that takes in a context id number and returns a
-                cluster id number
+    :return:    list of lists, each a function that takes in a context id
+                number and returns a cluster id number
     """
     cluster_assignments = [{}]  # context 0 is always in cluster 1
 
@@ -190,11 +190,5 @@ class DPVI(object):
         # get the log prob for each particle in the filter
         log_prob_h = np.array([h.get_log_post() for h in self.hypotheses])
 
-        # normalize, exponentiate,
-        prob = np.exp(log_prob_h - logsumexp(log_prob_h))
-
-        # multiply by weights
-        prob = np.multiply(prob, self.w)
-
-        # return the total log probability
-        return np.log(np.sum(prob))
+        # normalize, adjust by weights and take logsumexp
+        return logsumexp(log_prob_h - logsumexp(log_prob_h) + np.log(self.w))

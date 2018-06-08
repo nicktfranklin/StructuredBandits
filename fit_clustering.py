@@ -14,7 +14,7 @@ def objective(alpha, kwargs):
     return dpvi_filter.get_model_log_prob()
 
 
-def main(k=5, data_path=None, output_file=None, n_arms=8, mu_prior=25.0, var_init=5.0):
+def main(k=5, data_path=None, output_file=None, n_arms=8, mu_prior=25.0, var_init=5.0, intercept=False):
 
     data = pd.read_csv(data_path, header=0)
 
@@ -27,10 +27,13 @@ def main(k=5, data_path=None, output_file=None, n_arms=8, mu_prior=25.0, var_ini
         list_blocks = subj['round'].values - 1
         list_arms = subj['arm'].values - 1
         list_rewards = subj['out'].values
+        if intercept:
+            list_rewards += subj['int'].values
 
         kwargs = dict(list_blocks=list_blocks, list_arms=list_arms, list_rewards=list_rewards,
                       n_arms=n_arms, k=k, mu_prior=mu_prior, var_init=var_init)
-        alpha = np.arange(0.1, 10, 0.25)
+        alpha = np.arange(0.1, 10, 0.1)
+
         f = Parallel(n_jobs=num_cores)(delayed(objective)(a, kwargs) for a in alpha)
 
         return alpha[np.argmax(f)]
@@ -45,8 +48,11 @@ def main(k=5, data_path=None, output_file=None, n_arms=8, mu_prior=25.0, var_ini
 
 
 if __name__ == "__main__":
-    main(k=20, data_path='Data/exp_linear/lindata.csv', output_file='Data/alphas/exp_lin_alphas.pkl')
-    main(k=20, data_path='Data/exp_changepoint/changepoint.csv', output_file='Data/alphas/exp_cp_alphas.pkl')
-    main(k=20, data_path='Data/exp_shifted/datashifted.csv', output_file='Data/alphas/exp_shifted_alphas.pkl')
-    main(k=20, data_path='Data/exp_scrambled/datascrambled.csv', output_file='Data/alphas/exp_scram_alphas.pkl')
-    main(k=20, data_path='Data/exp_srs/datasrs.csv', output_file='Data/alphas/exp_srs_alphas.pkl')
+    k = 30
+
+    main(k=k, data_path='Data/exp_linear/lindata.csv', output_file='Data/alphas/exp_lin_alphas.pkl')
+    main(k=k, data_path='Data/exp_changepoint/changepoint.csv', output_file='Data/alphas/exp_cp_alphas.pkl')
+    main(k=k, data_path='Data/exp_shifted/datashifted_withoffset.csv',
+         output_file='Data/alphas/exp_shifted_alphas.pkl', intercept=True)
+    main(k=k, data_path='Data/exp_scrambled/datascrambled.csv', output_file='Data/alphas/exp_scram_alphas.pkl')
+    main(k=k, data_path='Data/exp_srs/datasrs.csv', output_file='Data/alphas/exp_srs_alphas.pkl')
