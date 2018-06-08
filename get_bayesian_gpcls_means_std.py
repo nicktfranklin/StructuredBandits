@@ -7,7 +7,7 @@ from get_noise_nmll import get_noise_nmll
 
 
 def get_means_stdev(x_mu_rbf, x_sd_rbf, x_mu_lin, x_sd_lin, x_mu_kal, x_sd_kal,
-    lin_gp_data, rbf_gp_data, noise_nmll):
+                    rewards, lin_gp_data, rbf_gp_data, noise_nmll):
 
     log_posterior = np.zeros((300, 3))
 
@@ -32,7 +32,7 @@ def get_means_stdev(x_mu_rbf, x_sd_rbf, x_mu_lin, x_sd_lin, x_mu_kal, x_sd_kal,
                 # for each of the GP model, we need to use an initialization over the model
                 # as it's prior. In the code Eric wrote, the log loss is set to -1.0 for
                 # the first observation, and it will vary depending on the prior
-                gp_loss = - norm(loc=25.0, scale=np.sqrt(5)).logpdf(raw_data.loc[t, 'out'])
+                gp_loss = - norm(loc=25.0, scale=np.sqrt(5)).logpdf(rewards[t])
 
                 # this loss value needs to be added to each of the observations in the round,
                 # because the loss scores are cumulative within a round
@@ -105,6 +105,9 @@ def exp_lin():
     rbf_gp_data = pd.read_csv('Data/exp_linear/rbfpred.csv')
     rbf_gp_data.index = range(len(rbf_gp_data))
 
+    raw_data = pd.read_csv('Data/exp_linear/lindata.csv')
+    rewards = raw_data[ 'out'].values
+
     noise_nmll = get_noise_nmll(raw_data_path='Data/exp_linear/lindata.csv')
 
     # drop subjects for which the RBF failed to converge
@@ -116,7 +119,6 @@ def exp_lin():
     for s in subjects_to_drop:
         lin_gp_data = lin_gp_data[lin_gp_data.id != s].copy()
         noise_nmll = noise_nmll[noise_nmll.Subject != s].copy()
-        raw_data = raw_data[raw_data.id != s].copy()
 
 
     x_mu_rbf = np.array([rbf_gp_data.loc[:, 'mu_ %d' % ii].values for ii in range(8)]).T
@@ -132,10 +134,9 @@ def exp_lin():
     # print lin_gp_data.columns
     all_subjs = get_means_stdev(
         x_mu_rbf, x_sd_rbf, x_mu_lin, x_sd_lin, x_mu_kal, x_sd_kal,
-        lin_gp_data, rbf_gp_data, noise_nmll
+        rewards, lin_gp_data, rbf_gp_data, noise_nmll
         )
     all_subjs.to_pickle('Data/exp_linear/bayes_gp_exp1.pkl')
-
 
 
 def exp_shifted():
@@ -146,7 +147,10 @@ def exp_shifted():
     rbf_gp_data = pd.read_csv('Data/exp_shifted/gprbfshifted.csv')
     rbf_gp_data.index = range(len(rbf_gp_data))
 
-    noise_nmll = get_noise_nmll(raw_data_path='Data/exp_linear/datashifted_withoffset.csv')
+    raw_data = pd.read_csv('Data/exp_shifted/datashifted_withoffset.csv')
+    rewards = raw_data['out'].values + raw_data['int'].values
+
+    noise_nmll = get_noise_nmll(raw_data_path='Data/exp_shifted/datashifted_withoffset.csv', intercept=True)
 
     # drop subjects for which the RBF failed to converge
     subjects_to_drop = set()
@@ -169,7 +173,7 @@ def exp_shifted():
 
     all_subjs = get_means_stdev(
         x_mu_rbf, x_sd_rbf, x_mu_lin, x_sd_lin, x_mu_kal, x_sd_kal,
-        lin_gp_data, rbf_gp_data, noise_nmll
+        rewards, lin_gp_data, rbf_gp_data, noise_nmll
         )
     all_subjs.to_pickle('Data/exp_shifted/bayes_gp_exp_shifted.pkl')
 
@@ -182,7 +186,10 @@ def exp_cp():
     rbf_gp_data = pd.read_csv('Data/exp_changepoint/changerbfpred.csv')
     rbf_gp_data.index = range(len(rbf_gp_data))
 
-    noise_nmll = get_noise_nmll(raw_data_path='Data/exp_changepoint/changepoint.csv', intercept=True)
+    raw_data = pd.read_csv('Data/exp_changepoint/changepoint.csv')
+    rewards = raw_data['out'].values
+
+    noise_nmll = get_noise_nmll(raw_data_path='Data/exp_changepoint/changepoint.csv')
 
     # drop subjects for which the RBF failed to converge
     subjects_to_drop = set()
@@ -205,7 +212,7 @@ def exp_cp():
 
     all_subjs = get_means_stdev(
         x_mu_rbf, x_sd_rbf, x_mu_lin, x_sd_lin, x_mu_kal, x_sd_kal,
-        lin_gp_data, rbf_gp_data, noise_nmll
+        rewards, lin_gp_data, rbf_gp_data, noise_nmll
         )
     all_subjs.to_pickle('Data/exp_changepoint/bayes_gp_exp_cp.pkl')
 
@@ -217,6 +224,9 @@ def exp_srs():
 
     rbf_gp_data = pd.read_csv('Data/exp_srs/gprbfsrs.csv')
     rbf_gp_data.index = range(len(rbf_gp_data))
+
+    raw_data = pd.read_csv('Data/exp_srs/datasrs.csv')
+    rewards = raw_data['out'].values
 
     noise_nmll = get_noise_nmll(raw_data_path='Data/exp_srs/datasrs.csv')
 
@@ -241,7 +251,7 @@ def exp_srs():
 
     all_subjs = get_means_stdev(
         x_mu_rbf, x_sd_rbf, x_mu_lin, x_sd_lin, x_mu_kal, x_sd_kal,
-        lin_gp_data, rbf_gp_data, noise_nmll
+        rewards, lin_gp_data, rbf_gp_data, noise_nmll
         )
     all_subjs.to_pickle('Data/exp_srs/bayes_gp_exp_srs.pkl')
 
@@ -252,6 +262,9 @@ def exp_scrambled():
 
     rbf_gp_data = pd.read_csv('Data/exp_scrambled/gprbfscrambled.csv')
     rbf_gp_data.index = range(len(rbf_gp_data))
+
+    raw_data = pd.read_csv('Data/exp_scrambled/datascrambled.csv')
+    rewards = raw_data['out'].values
 
     noise_nmll = get_noise_nmll(raw_data_path='Data/exp_scrambled/datascrambled.csv')
 
@@ -276,7 +289,7 @@ def exp_scrambled():
 
     all_subjs = get_means_stdev(
         x_mu_rbf, x_sd_rbf, x_mu_lin, x_sd_lin, x_mu_kal, x_sd_kal,
-        lin_gp_data, rbf_gp_data, noise_nmll
+        rewards, lin_gp_data, rbf_gp_data, noise_nmll
         )
     all_subjs.to_pickle('Data/exp_scrambled/bayes_gp_exp_scram.pkl')
 

@@ -37,7 +37,8 @@ def get_noise_nmll(raw_data_path, n_arms=8, mu_prior=25.0, var_init=5.0, interce
 
             # update the estimates for the next trial only if not the end of a block
             if ((t+1) % 10) != 0:
-                r0 = np.array(list_rewards)[(b == np.array(list_blocks)) & (np.arange(0, 300) < t + 1) &
+                r0 = np.array(list_rewards)[
+                    (b == np.array(list_blocks)) & (np.arange(0, 300) < t + 1) &
                                             (a == np.array(list_arms))].reshape(-1, 1)
                 mus[t+1, a] = np.mean(r0)
                 if np.shape(r0)[0] > 1:
