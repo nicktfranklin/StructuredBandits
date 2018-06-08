@@ -83,7 +83,7 @@ if __name__ == "__main__":
 
     #### Set parameters for all of the experiments!
 
-    k = 20
+    k = 30
 
     # linear
     generate(
@@ -125,9 +125,3 @@ if __name__ == "__main__":
         output_file_path = 'Data/exp_changepoint/exp_cp_clustering_means_std.csv',
         k=k
     )
-
-
-
-
-
-
