@@ -278,11 +278,11 @@ def exp_scrambled():
         lin_gp_data = lin_gp_data[lin_gp_data.id != s].copy()
         noise_nmll = noise_nmll[noise_nmll.Subject != s].copy()
 
-    x_mu_lin = np.array([lin_gp_data.loc[:, 'mu%d' % ii].values for ii in range(8)]).T
-    x_sd_lin = np.array([lin_gp_data.loc[:, 'sigma%d' % ii].values for ii in range(8)]).T
+    x_mu_lin = np.array([lin_gp_data.loc[:, 'mu_%d' % ii].values for ii in range(8)]).T
+    x_sd_lin = np.array([lin_gp_data.loc[:, 'std_%d' % ii].values for ii in range(8)]).T
 
-    x_mu_rbf = np.array([rbf_gp_data.loc[:, 'mu%d' % ii].values for ii in range(8)]).T
-    x_sd_rbf = np.array([rbf_gp_data.loc[:, 'sigma%d' % ii].values for ii in range(8)]).T
+    x_mu_rbf = np.array([rbf_gp_data.loc[:, 'mu_%d' % ii].values for ii in range(8)]).T
+    x_sd_rbf = np.array([rbf_gp_data.loc[:, 'std_%d' % ii].values for ii in range(8)]).T
 
     x_mu_kal = np.array([noise_nmll.loc[:, 'mu_%d' % ii].values for ii in range(8)]).T
     x_sd_kal = np.array([noise_nmll.loc[:, 'std_%d' % ii].values for ii in range(8)]).T

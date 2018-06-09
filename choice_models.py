@@ -494,8 +494,8 @@ def run_save_models(model_matrix, name_tag, sample_kwargs=None):
 
     # GP-RBF
 
-    rbf_params = ['mu_beta_rbf_mean', 'mu_beta_rbf_stdv', 'mu_beta_stick',
-                  'sigma_rbf_means', 'sigma_rbf_stdev', 'sigma_stick']
+    rbf_params = ['mu_beta_rbf_mean',
+                  'mu_beta_rbf_stdv', 'mu_beta_stick', 'sigma_rbf_means', 'sigma_rbf_stdev', 'sigma_stick']
 
     model_loo, model_params = sample_model(sample_heir_rbf_kal, rbf_params, 'GP-RBF')
     model_params.to_pickle('Data/model_fits/model_params_%s_rbf.pkl' % name_tag)
@@ -572,8 +572,28 @@ def run_save_models(model_matrix, name_tag, sample_kwargs=None):
     model_loo = pd.concat([model_loo, _loo])
     model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
 
+
+def make_debug_matrix(model_matrix, n_debug=8):
+    model_matrix['x_mu_cls'] = model_matrix['x_mu_cls'][model_matrix['subj_idx'] < n_debug, :]
+    model_matrix['x_sd_cls'] = model_matrix['x_sd_cls'][model_matrix['subj_idx'] < n_debug, :]
+    model_matrix['x_mu_lin'] = model_matrix['x_mu_lin'][model_matrix['subj_idx'] < n_debug, :]
+    model_matrix['x_sd_lin'] = model_matrix['x_sd_lin'][model_matrix['subj_idx'] < n_debug, :]
+    model_matrix['x_mu_rbf'] = model_matrix['x_mu_rbf'][model_matrix['subj_idx'] < n_debug, :]
+    model_matrix['x_sd_rbf'] = model_matrix['x_sd_rbf'][model_matrix['subj_idx'] < n_debug, :]
+    model_matrix['x_mu_kal'] = model_matrix['x_mu_kal'][model_matrix['subj_idx'] < n_debug, :]
+    model_matrix['x_sd_kal'] = model_matrix['x_sd_kal'][model_matrix['subj_idx'] < n_debug, :]
+    model_matrix['x_mu_bayes_gp'] = model_matrix['x_mu_bayes_gp'][model_matrix['subj_idx'] < n_debug, :]
+    model_matrix['x_sd_bayes_gp'] = model_matrix['x_sd_bayes_gp'][model_matrix['subj_idx'] < n_debug, :]
+    model_matrix['y'] = model_matrix['y'][model_matrix['subj_idx'] < n_debug]
+    model_matrix['x_sc'] = model_matrix['x_sc'][model_matrix['subj_idx'] < n_debug, :]
+    model_matrix['subj_idx'] = model_matrix['subj_idx'][model_matrix['subj_idx'] < n_debug]
+    model_matrix['n_subj'] = len(set(model_matrix['subj_idx']))
+
+    return model_matrix
+
+
 def exp_linear(sample_kwargs=None, debug=False):
-    clustering_data = pd.read_pickle('Data/exp_linear/lindata.csv')
+    clustering_data = pd.read_pickle('Data/exp_linear/exp_lin_clustering_means_std.pkl')
     clustering_data.index = range(len(clustering_data))
 
     lin_gp_data = pd.read_csv('Data/exp_linear/linpred.csv')
@@ -599,7 +619,7 @@ def exp_linear(sample_kwargs=None, debug=False):
             subjects_to_drop.add(s)
 
     for s in subjects_to_drop:
-        # clustering_data = clustering_data[clustering_data['Subject'] != s].copy()
+        clustering_data = clustering_data[clustering_data['Subject'] != s].copy()
         lin_gp_data = lin_gp_data[lin_gp_data.id != s].copy()
         raw_data = raw_data[raw_data.id != s].copy()
         kalman_data = kalman_data[kalman_data.id != s].copy()
@@ -630,26 +650,9 @@ def exp_linear(sample_kwargs=None, debug=False):
 
     y = raw_data['arm'].values - 1  # convert to 0 indexing
 
-    # for debugging....
-    if debug:
-        # x_mu_cls = x_mu_cls[subj_idx < 15]
-        # x_sd_cls = x_sd_cls[subj_idx < 15]
-        x_mu_lin = x_mu_lin[subj_idx < 8, :]
-        x_sd_lin = x_sd_lin[subj_idx < 8, :]
-        x_mu_rbf = x_mu_rbf[subj_idx < 8, :]
-        x_sd_rbf = x_sd_rbf[subj_idx < 8, :]
-        x_mu_kal = x_mu_kal[subj_idx < 8, :]
-        x_sd_kal = x_sd_kal[subj_idx < 8, :]
-        x_mu_bayes_gp = x_mu_bayes_gp[subj_idx < 8, :]
-        x_sd_bayes_gp = x_sd_bayes_gp[subj_idx < 8, :]
-        y = y[subj_idx < 8]
-        x_sc = x_sc[subj_idx < 8, :]
-        subj_idx = subj_idx[subj_idx < 8]
-        n_subj = len(set(subj_idx))
-
     model_matrix = dict(
-        # x_mu_cls=x_mu_cls,
-        # x_sd_cls=x_sd_cls,
+        x_mu_cls=x_mu_cls,
+        x_sd_cls=x_sd_cls,
         x_mu_lin=x_mu_lin,
         x_sd_lin=x_sd_lin,
         x_mu_rbf=x_mu_rbf,
@@ -664,8 +667,11 @@ def exp_linear(sample_kwargs=None, debug=False):
         subj_idx=subj_idx
     )
 
-    print "Experiment 1, Running %d subjects" % n_subj
-    run_save_models(model_matrix, name_tag='exp_1')
+    if debug:
+        model_matrix = make_debug_matrix(model_matrix)
+
+    print "Experiment 1, Running %d subjects" % model_matrix['n_subj']
+    run_save_models(model_matrix, name_tag='exp_1', sample_kwargs=sample_kwargs)
 
 if __name__ == "__main__":
 

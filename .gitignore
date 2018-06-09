@@ -7,8 +7,7 @@ __pycache__/
 .idea/
 .DS_Store
 *profile
-
-
+fit_profiler.py
 
 # C extensions
 *.so

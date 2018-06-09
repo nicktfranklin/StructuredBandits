@@ -81,7 +81,7 @@ def generate(raw_data_path, output_file_path, k=30, n_arms=8, mu_prior=25.0, var
 
 if __name__ == "__main__":
 
-    #### Set parameters for all of the experiments!
+    # ### Set parameters for all of the experiments!
 
     k = 30
 
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     generate(
         raw_data_path    = 'Data/exp_linear/lindata.csv',
         fit_alphas_path  = 'Data/alphas/exp_lin_alphas.pkl',
-        output_file_path = 'Data/exp_linear/exp_lin_clustering_means_std.csv',
+        output_file_path = 'Data/exp_linear/exp_lin_clustering_means_std.pkl',
         k=k
     )
 
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     generate(
         raw_data_path    = 'Data/exp_scrambled/datascrambled.csv',
         fit_alphas_path  = 'Data/alphas/exp_lin_alphas.pkl',
-        output_file_path = 'Data/exp_scrambled/exp_lin_clustering_means_std.csv',
+        output_file_path = 'Data/exp_scrambled/exp_lin_clustering_means_std.pkl',
         k=k
     )
 
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     generate(
         raw_data_path    = 'Data/exp_shifted/datashifted_withoffset.csv',
         fit_alphas_path  = 'Data/alphas/exp_shifted_alphas.pkl',
-        output_file_path = 'Data/exp_shifted/exp_shifted_clustering_means_std.csv',
+        output_file_path = 'Data/exp_shifted/exp_shifted_clustering_means_std.pkl',
         k=k,
         intercept=True
     )
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     generate(
         raw_data_path    = 'Data/exp_srs/datasrs.csv',
         fit_alphas_path  = 'Data/alphas/exp_srs_alphas.pkl',
-        output_file_path = 'Data/exp_srs/exp_srs_clustering_means_std.csv',
+        output_file_path = 'Data/exp_srs/exp_srs_clustering_means_std.pkl',
         k=k
     )
 
@@ -122,6 +122,6 @@ if __name__ == "__main__":
     generate(
         raw_data_path    = 'Data/exp_changepoint/changepoint.csv',
         fit_alphas_path  = 'Data/alphas/exp_cp_alphas.pkl',
-        output_file_path = 'Data/exp_changepoint/exp_cp_clustering_means_std.csv',
+        output_file_path = 'Data/exp_changepoint/exp_cp_clustering_means_std.pkl',
         k=k
     )
