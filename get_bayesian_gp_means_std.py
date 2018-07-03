@@ -162,10 +162,10 @@ def exp_shifted():
         lin_gp_data = lin_gp_data[lin_gp_data.id != s].copy()
         noise_nmll = noise_nmll[noise_nmll.Subject != s].copy()
 
-    x_mu_lin = np.array([lin_gp_data.loc[:, 'mu_%d' % ii].values for ii in range(8)]).T
+    x_mu_lin = np.array([lin_gp_data.loc[:, 'mu_%d' % ii].values + raw_data['int'].values for ii in range(8)]).T
     x_sd_lin = np.array([lin_gp_data.loc[:, 'std_%d' % ii].values for ii in range(8)]).T
 
-    x_mu_rbf = np.array([rbf_gp_data.loc[:, 'mu_%d' % ii].values for ii in range(8)]).T
+    x_mu_rbf = np.array([rbf_gp_data.loc[:, 'mu_%d' % ii].values + raw_data['int'].values for ii in range(8)]).T
     x_sd_rbf = np.array([rbf_gp_data.loc[:, 'std_%d' % ii].values for ii in range(8)]).T
 
     x_mu_kal = np.array([noise_nmll.loc[:, 'mu_%d' % ii].values for ii in range(8)]).T
@@ -294,8 +294,8 @@ def exp_scrambled():
     all_subjs.to_pickle('Data/exp_scrambled/bayes_gp_exp_scram.pkl')
 
 if __name__ == "__main__":
-    exp_lin()
+    # exp_lin()
     exp_shifted()
-    exp_cp()
-    exp_srs()
-    exp_scrambled()
+    # exp_cp()
+    # exp_srs()
+    # exp_scrambled()
