@@ -96,8 +96,8 @@ if __name__ == "__main__":
     # scrambled
     generate(
         raw_data_path    = 'Data/exp_scrambled/datascrambled.csv',
-        fit_alphas_path  = 'Data/alphas/exp_lin_alphas.pkl',
-        output_file_path = 'Data/exp_scrambled/exp_lin_clustering_means_std.pkl',
+        fit_alphas_path  = 'Data/alphas/exp_scram_alphas.pkl',
+        output_file_path = 'Data/exp_scrambled/exp_scram_clustering_means_std.pkl',
         k=k
     )
 

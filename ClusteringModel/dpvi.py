@@ -181,8 +181,8 @@ class DPVI(object):
         return mu, stdev
 
     def _get_var_prior(self, block, arm):
-        """ this is a special case function that returns the prior probability of each cluster
-        and it's variance for the """
+        """ this is a special case function that returns the prior probability
+        of each cluster and it's variance for the """
         pass
 
     def get_model_log_prob(self):
