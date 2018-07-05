@@ -559,7 +559,7 @@ def run_save_models(model_matrix, name_tag, sample_kwargs=None):
     lin_cls_params = ['mu_beta_rbf_mean', 'mu_beta_rbf_stdv', 'mu_beta_kal_mean',
                       'mu_beta_kal_stdv', 'mu_beta_stick', 'sigma_rbf_means',
                       'sigma_rbf_stdev', 'sigma_kal_means', 'sigma_rbf_stdev', 'sigma_stick']
-    _loo, model_params = sample_model(sample_heir_lin_cls, lin_cls_params, 'Linear/Clustering')
+    _loo, model_params = sample_model(sample_heir_lin_cls, lin_cls_params, 'GP-RBF/Kalman')
     model_params.to_pickle('Data/model_fits/model_params_%s_rbf_kal.pkl' % name_tag)
     model_loo = pd.concat([model_loo, _loo])
     model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
@@ -684,14 +684,13 @@ def exp_scrambled(sample_kwargs=None, debug=False):
     rbf_gp_data = pd.read_csv('Data/exp_scrambled/gprbfscrambled.csv')
     rbf_gp_data.index = range(len(rbf_gp_data))
 
-    kalman_data = pd.read_csv('Data/exp_scrambled/kalmanscrabled.csv')
+    kalman_data = pd.read_csv('Data/exp_scrambled/kalmanscrambled.csv')
     kalman_data.index = range(len(kalman_data))
 
     bayes_gp_data = pd.read_pickle('Data/exp_scrambled/bayes_gp_exp_scram.pkl')
     bayes_gp_data.index = range(len(bayes_gp_data))
 
     raw_data = pd.read_csv('Data/exp_scrambled/datascrambled.csv', header=0)
-    raw_data.drop(raw_data.columns.tolist()[0], axis=1, inplace=True)
 
     # the GP-RBF can fail if subject always choose the same response. For simplicity, we are dropping those
     # subjects
@@ -755,7 +754,252 @@ def exp_scrambled(sample_kwargs=None, debug=False):
     print "Experiment Scrambled, Running %d subjects" % model_matrix['n_subj']
     run_save_models(model_matrix, name_tag='exp_scram', sample_kwargs=sample_kwargs)
 
+def exp_change_point(sample_kwargs=None, debug=False):
+    clustering_data = pd.read_pickle('Data/exp_changepoint/exp_cp_clustering_means_std.pkl')
+    clustering_data.index = range(len(clustering_data))
+
+    lin_gp_data = pd.read_csv('Data/exp_changepoint/changelinpred.csv')
+    lin_gp_data.index = range(len(lin_gp_data))
+
+    rbf_gp_data = pd.read_csv('Data/exp_changepoint/changerbfpred.csv')
+    rbf_gp_data.index = range(len(rbf_gp_data))
+
+    kalman_data = pd.read_csv('Data/exp_changepoint/changekalmanpred.csv')
+    kalman_data.index = range(len(kalman_data))
+
+    bayes_gp_data = pd.read_pickle('Data/exp_changepoint/bayes_gp_exp_cp.pkl')
+    bayes_gp_data.index = range(len(bayes_gp_data))
+
+    raw_data = pd.read_csv('Data/exp_changepoint/changepoint.csv', header=0)
+
+    # the GP-RBF can fail if subject always choose the same response. For simplicity, we are dropping those
+    # subjects
+    subjects_to_drop = set()
+    for s in set(raw_data.id):
+        if s not in set(rbf_gp_data.id):
+            subjects_to_drop.add(s)
+
+    for s in subjects_to_drop:
+        clustering_data = clustering_data[clustering_data['Subject'] != s].copy()
+        lin_gp_data = lin_gp_data[lin_gp_data.id != s].copy()
+        raw_data = raw_data[raw_data.id != s].copy()
+        kalman_data = kalman_data[kalman_data.id != s].copy()
+        bayes_gp_data = bayes_gp_data[bayes_gp_data['Subject'] != s].copy()
+
+    # construct a sticky choice predictor. This is the same for all of the models
+    x_sc = construct_sticky_choice(raw_data)
+
+    # PYMC3 doesn't care about the actual subject numbers, so remap these to a sequential list
+    subj_idx = construct_subj_idx(lin_gp_data)
+    n_subj = len(set(subj_idx))
+
+    # prep the predictor vectors
+    x_mu_cls = np.array([clustering_data.loc[:, 'mu_%d' % ii].values for ii in range(8)]).T
+    x_sd_cls = np.array([clustering_data.loc[:, 'std_%d' % ii].values for ii in range(8)]).T
+
+    x_mu_bayes_gp = np.array([bayes_gp_data.loc[:, 'mu_%d' % ii].values for ii in range(8)]).T
+    x_sd_bayes_gp = np.array([bayes_gp_data.loc[:, 'std_%d' % ii].values for ii in range(8)]).T
+
+    x_mu_lin = np.array([lin_gp_data.loc[:, 'mu_%d' % ii].values for ii in range(8)]).T
+    x_sd_lin = np.array([lin_gp_data.loc[:, 'sigma_%d' % ii].values for ii in range(8)]).T
+
+    x_mu_rbf = np.array([rbf_gp_data.loc[:, 'mu_%d' % ii].values for ii in range(8)]).T
+    x_sd_rbf = np.array([rbf_gp_data.loc[:, 'sigma_%d' % ii].values for ii in range(8)]).T
+
+    x_mu_kal = np.array([kalman_data.loc[:, 'mu_%d' % ii].values for ii in range(8)]).T
+    x_sd_kal = np.array([kalman_data.loc[:, 'sig_%d' % ii].values for ii in range(8)]).T
+
+    y = raw_data['arm'].values - 1  # convert to 0 indexing
+
+    model_matrix = dict(
+        x_mu_cls=x_mu_cls,
+        x_sd_cls=x_sd_cls,
+        x_mu_lin=x_mu_lin,
+        x_sd_lin=x_sd_lin,
+        x_mu_rbf=x_mu_rbf,
+        x_sd_rbf=x_sd_rbf,
+        x_mu_kal=x_mu_kal,
+        x_sd_kal=x_sd_kal,
+        x_mu_bayes_gp=x_mu_bayes_gp,
+        x_sd_bayes_gp=x_sd_bayes_gp,
+        y=y,
+        n_subj=n_subj,
+        x_sc=x_sc,
+        subj_idx=subj_idx
+    )
+
+    if debug:
+        model_matrix = make_debug_matrix(model_matrix)
+
+    print "Experiment Change Point, Running %d subjects" % model_matrix['n_subj']
+    run_save_models(model_matrix, name_tag='exp_cp', sample_kwargs=sample_kwargs)
+
+def exp_shifted(sample_kwargs=None, debug=False):
+    clustering_data = pd.read_pickle('Data/exp_shifted/exp_shifted_clustering_means_std.pkl')
+    clustering_data.index = range(len(clustering_data))
+
+    lin_gp_data = pd.read_csv('Data/exp_shifted/gplinshifted.csv')
+    lin_gp_data.index = range(len(lin_gp_data))
+
+    rbf_gp_data = pd.read_csv('Data/exp_shifted/gprbfshifted.csv')
+    rbf_gp_data.index = range(len(rbf_gp_data))
+
+    kalman_data = pd.read_csv('Data/exp_shifted/kalmanshifted.csv')
+    kalman_data.index = range(len(kalman_data))
+
+    bayes_gp_data = pd.read_pickle('Data/exp_shifted/bayes_gp_exp_shifted.pkl')
+    bayes_gp_data.index = range(len(bayes_gp_data))
+
+    raw_data = pd.read_csv('Data/exp_shifted/datashifted_withoffset.csv', header=0)
+
+    # the GP-RBF can fail if subject always choose the same response. For simplicity, we are dropping those
+    # subjects
+    subjects_to_drop = set()
+    for s in set(raw_data.id):
+        if s not in set(rbf_gp_data.id):
+            subjects_to_drop.add(s)
+
+    for s in subjects_to_drop:
+        clustering_data = clustering_data[clustering_data['Subject'] != s].copy()
+        lin_gp_data = lin_gp_data[lin_gp_data.id != s].copy()
+        raw_data = raw_data[raw_data.id != s].copy()
+        kalman_data = kalman_data[kalman_data.id != s].copy()
+        bayes_gp_data = bayes_gp_data[bayes_gp_data['Subject'] != s].copy()
+
+    # construct a sticky choice predictor. This is the same for all of the models
+    x_sc = construct_sticky_choice(raw_data)
+
+    # PYMC3 doesn't care about the actual subject numbers, so remap these to a sequential list
+    subj_idx = construct_subj_idx(lin_gp_data)
+    n_subj = len(set(subj_idx))
+
+    intercept = raw_data['int'].values
+
+    # prep the predictor vectors
+    x_mu_cls = np.array([clustering_data.loc[:, 'mu_%d' % ii].values for ii in range(8)]).T
+    x_sd_cls = np.array([clustering_data.loc[:, 'std_%d' % ii].values for ii in range(8)]).T
+
+    x_mu_bayes_gp = np.array([bayes_gp_data.loc[:, 'mu_%d' % ii].values for ii in range(8)]).T
+    x_sd_bayes_gp = np.array([bayes_gp_data.loc[:, 'std_%d' % ii].values for ii in range(8)]).T
+
+    x_mu_lin = np.array([lin_gp_data.loc[:, 'mu_%d' % ii].values + intercept for ii in range(8)]).T
+    x_sd_lin = np.array([lin_gp_data.loc[:, 'std_%d' % ii].values for ii in range(8)]).T
+
+    x_mu_rbf = np.array([rbf_gp_data.loc[:, 'mu_%d' % ii].values + intercept for ii in range(8)]).T
+    x_sd_rbf = np.array([rbf_gp_data.loc[:, 'std_%d' % ii].values for ii in range(8)]).T
+
+    x_mu_kal = np.array([kalman_data.loc[:, 'mu_%d' % ii].values + intercept for ii in range(8)]).T
+    x_sd_kal = np.array([kalman_data.loc[:, 'sig_%d' % ii].values for ii in range(8)]).T
+
+    y = raw_data['arm'].values - 1  # convert to 0 indexing
+
+    model_matrix = dict(
+        x_mu_cls=x_mu_cls,
+        x_sd_cls=x_sd_cls,
+        x_mu_lin=x_mu_lin,
+        x_sd_lin=x_sd_lin,
+        x_mu_rbf=x_mu_rbf,
+        x_sd_rbf=x_sd_rbf,
+        x_mu_kal=x_mu_kal,
+        x_sd_kal=x_sd_kal,
+        x_mu_bayes_gp=x_mu_bayes_gp,
+        x_sd_bayes_gp=x_sd_bayes_gp,
+        y=y,
+        n_subj=n_subj,
+        x_sc=x_sc,
+        subj_idx=subj_idx
+    )
+
+    if debug:
+        model_matrix = make_debug_matrix(model_matrix)
+
+    print "Experiment Shifted, Running %d subjects" % model_matrix['n_subj']
+    run_save_models(model_matrix, name_tag='exp_shifted', sample_kwargs=sample_kwargs)
+
+def exp_srs(sample_kwargs=None, debug=False):
+    clustering_data = pd.read_pickle('Data/exp_srs/exp_srs_clustering_means_std.pkl')
+    clustering_data.index = range(len(clustering_data))
+
+    lin_gp_data = pd.read_csv('Data/exp_srs/gplinsrs.csv')
+    lin_gp_data.index = range(len(lin_gp_data))
+
+    rbf_gp_data = pd.read_csv('Data/exp_srs/gprbfsrs.csv')
+    rbf_gp_data.index = range(len(rbf_gp_data))
+
+    kalman_data = pd.read_csv('Data/exp_srs/kalmansrs.csv')
+    kalman_data.index = range(len(kalman_data))
+
+    bayes_gp_data = pd.read_pickle('Data/exp_srs/bayes_gp_exp_srs.pkl')
+    bayes_gp_data.index = range(len(bayes_gp_data))
+
+    raw_data = pd.read_csv('Data/exp_srs/datasrs.csv', header=0)
+
+    # the GP-RBF can fail if subject always choose the same response. For simplicity, we are dropping those
+    # subjects
+    subjects_to_drop = set()
+    for s in set(raw_data.id):
+        if s not in set(rbf_gp_data.id):
+            subjects_to_drop.add(s)
+
+    for s in subjects_to_drop:
+        clustering_data = clustering_data[clustering_data['Subject'] != s].copy()
+        lin_gp_data = lin_gp_data[lin_gp_data.id != s].copy()
+        raw_data = raw_data[raw_data.id != s].copy()
+        kalman_data = kalman_data[kalman_data.id != s].copy()
+        bayes_gp_data = bayes_gp_data[bayes_gp_data['Subject'] != s].copy()
+
+    # construct a sticky choice predictor. This is the same for all of the models
+    x_sc = construct_sticky_choice(raw_data)
+
+    # PYMC3 doesn't care about the actual subject numbers, so remap these to a sequential list
+    subj_idx = construct_subj_idx(lin_gp_data)
+    n_subj = len(set(subj_idx))
+
+    # prep the predictor vectors
+    x_mu_cls = np.array([clustering_data.loc[:, 'mu_%d' % ii].values for ii in range(8)]).T
+    x_sd_cls = np.array([clustering_data.loc[:, 'std_%d' % ii].values for ii in range(8)]).T
+
+    x_mu_bayes_gp = np.array([bayes_gp_data.loc[:, 'mu_%d' % ii].values for ii in range(8)]).T
+    x_sd_bayes_gp = np.array([bayes_gp_data.loc[:, 'std_%d' % ii].values for ii in range(8)]).T
+
+    x_mu_lin = np.array([lin_gp_data.loc[:, 'mu%d' % ii].values for ii in range(8)]).T
+    x_sd_lin = np.array([lin_gp_data.loc[:, 'sigma%d' % ii].values for ii in range(8)]).T
+
+    x_mu_rbf = np.array([rbf_gp_data.loc[:, 'mu%d' % ii].values for ii in range(8)]).T
+    x_sd_rbf = np.array([rbf_gp_data.loc[:, 'sigma%d' % ii].values for ii in range(8)]).T
+
+    x_mu_kal = np.array([kalman_data.loc[:, 'mu_%d' % ii].values for ii in range(8)]).T
+    x_sd_kal = np.array([kalman_data.loc[:, 'sig_%d' % ii].values for ii in range(8)]).T
+
+    y = raw_data['arm'].values - 1  # convert to 0 indexing
+
+    model_matrix = dict(
+        x_mu_cls=x_mu_cls,
+        x_sd_cls=x_sd_cls,
+        x_mu_lin=x_mu_lin,
+        x_sd_lin=x_sd_lin,
+        x_mu_rbf=x_mu_rbf,
+        x_sd_rbf=x_sd_rbf,
+        x_mu_kal=x_mu_kal,
+        x_sd_kal=x_sd_kal,
+        x_mu_bayes_gp=x_mu_bayes_gp,
+        x_sd_bayes_gp=x_sd_bayes_gp,
+        y=y,
+        n_subj=n_subj,
+        x_sc=x_sc,
+        subj_idx=subj_idx
+    )
+
+    if debug:
+        model_matrix = make_debug_matrix(model_matrix)
+
+    print "Experiment SRS, Running %d subjects" % model_matrix['n_subj']
+    run_save_models(model_matrix, name_tag='exp_srs', sample_kwargs=sample_kwargs)
+
 if __name__ == "__main__":
 
-    exp_linear()
-    exp_scrambled()
+    # exp_linear()
+    # exp_scrambled()
+    exp_change_point()
+    exp_shifted()
+    exp_srs()
