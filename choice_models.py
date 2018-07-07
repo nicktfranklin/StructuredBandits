@@ -1000,6 +1000,6 @@ if __name__ == "__main__":
 
     # exp_linear()
     # exp_scrambled()
-    exp_change_point()
-    exp_shifted()
+    # exp_change_point()
+    # exp_shifted()
     exp_srs()
