@@ -50,9 +50,9 @@ def main(k=5, data_path=None, output_file=None, n_arms=8, mu_prior=25.0, var_ini
 if __name__ == "__main__":
     k = 30
 
-    # main(k=k, data_path='Data/exp_linear/lindata.csv', output_file='Data/alphas/exp_lin_alphas.pkl')
-    # main(k=k, data_path='Data/exp_changepoint/changepoint.csv', output_file='Data/alphas/exp_cp_alphas.pkl')
-    # main(k=k, data_path='Data/exp_shifted/datashifted_withoffset.csv',
-    #      output_file='Data/alphas/exp_shifted_alphas.pkl', intercept=True)
-    # main(k=k, data_path='Data/exp_scrambled/datascrambled.csv', output_file='Data/alphas/exp_scram_alphas.pkl')
+    main(k=k, data_path='Data/exp_linear/lindata.csv', output_file='Data/alphas/exp_lin_alphas.pkl')
+    main(k=k, data_path='Data/exp_changepoint/changepoint.csv', output_file='Data/alphas/exp_cp_alphas.pkl')
+    main(k=k, data_path='Data/exp_shifted/datashifted_withoffset.csv',
+         output_file='Data/alphas/exp_shifted_alphas.pkl', intercept=True)
+    main(k=k, data_path='Data/exp_scrambled/datascrambled.csv', output_file='Data/alphas/exp_scram_alphas.pkl')
     main(k=k, data_path='Data/exp_srs/datasrs.csv', output_file='Data/alphas/exp_srs_alphas.pkl')
