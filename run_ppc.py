@@ -12,7 +12,7 @@ import theano as t
 print('Runing on PyMC3 v{}'.format(pm.__version__))
 print('Runing on Theano v{}'.format(t.__version__))
 
-from choice_models import construct_sticky_choice, construct_subj_idx
+from fit_choice_models import construct_sticky_choice, construct_subj_idx
 
 def exp_linear(sample_kwargs=None):
 
@@ -200,6 +200,7 @@ def exp_shifted(sample_kwargs=None):
         sim_draws = raw_data.copy()
         sim_draws['arm_sim'] = ppc['yl'][ii, :] + 1
         sim_draws.to_pickle('./Data/PPC/exp_shifted/sim_%d.pkl' % ii)
+
 
 if __name__ == '__main__':
     exp_linear()
