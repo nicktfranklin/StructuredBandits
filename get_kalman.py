@@ -125,10 +125,19 @@ def get_kalman(raw_data_path, n_arms=8, mu_prior=25.0, var_init=5.0, var_e=0.2, 
 
 
 if __name__ == "__main__":
-    pass
-    ## example usage!
-    # out = get_noise_nmll(raw_data_path='Data/changepoint.csv')
-    # out.to_pickle(output_file_path='Data/exp2_noise_mnll.pkl')
-    #
-    # out = get_noise_nmll(raw_data_path='Data/Shifted/datashifted.csv')
-    # out.to_pickle(output_file_path='Data/Shifted/expShift_noise_mnll.pkl')
+
+    ## example usage! (this is for the kalman data)
+    out = get_kalman(raw_data_path='Data/exp_linear/lindata.csv')
+    out.to_pickle('Data/exp_linear/kalmanpred.pkl')
+
+    out = get_kalman(raw_data_path='Data/exp_changepoint/changepoint.csv')
+    out.to_pickle('Data/exp_changepoint/changekalmanpred.pkl')
+
+    out = get_kalman(raw_data_path='Data/exp_scrambled/datascrambled.csv')
+    out.to_pickle('Data/exp_scrambled/kalmanscrambled.pkl')
+
+    out = get_kalman(raw_data_path='Data/exp_srs/datasrs.csv')
+    out.to_pickle('Data/exp_srs/kalmansrs.pkl')
+
+    out = get_kalman(raw_data_path='Data/exp_shifted/datashifted_withoffset.csv', intercept=True)
+    out.to_pickle('Data/exp_shifted/kalmanshifted.pkl')
