@@ -103,10 +103,9 @@ def get_kalman(raw_data_path, n_arms=8, mu_prior=25.0, var_init=5.0, var_e=0.2, 
                 G = (vars[t, a] + var_i) / (vars[t, a] + var_e + var_i)
 
                 mus[t+1, a] = mus[t, a] + G * (r0 - mus[t, a])
-                # print G, (1 - G), (vars[t, a] + var_i), (1 - G) * (vars[t, a] + var_i)
 
-                vars[t+1, a] = vars[t, a] + (1- G) * var_i  # this is the update Eric's code used (but it's wrong!)
-                vars[t + 1, a] =  + (1 - G) * (vars[t, a] + var_i)
+                # vars[t+1, a] = vars[t, a] + (1- G) * var_i  # this is the update Eric's code used (but it's wrong!)
+                vars[t + 1, a] = (1 - G) * (vars[t, a] + var_i)
 
         df = {
             'Subject': [subj_n] * n_trials,
