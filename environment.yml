@@ -1,4 +1,4 @@
-name: gp_learning
+name: structured_bandits
 channels:
   - defaults
 dependencies:
