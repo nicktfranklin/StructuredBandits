@@ -484,6 +484,38 @@ def sample_heir_scram_kal(model_matrix, sample_kwargs=None):
     return hier_kal_scrambeled, trace_kal_scram
 
 
+def sample_sticky_only(model_matrix, sample_kwargs=None):
+
+    # load the data
+    x_sc = model_matrix['x_sc']
+    subj_idx = model_matrix['subj_idx']
+    y = model_matrix['y']
+    n_subj = model_matrix['n_subj']
+
+    n, d = model_matrix['x_mu_kal'].shape
+    if sample_kwargs is None:
+        sample_kwargs = dict(draws=2000, njobs=2, tune=2000, init='advi+adapt_diag')
+
+    with pm.Model() as hier_sticky:
+
+        mu_1 = pm.Normal('mu_beta_stick',       mu=0., sd=100.)
+        sigma_1 = pm.HalfCauchy('sigma_stick',        beta=100)
+
+        b_1 = pm.Normal('beta_sticky',  mu=mu_1, sd=sigma_1, shape=n_subj)
+
+        rho = tt.tile(tt.reshape(b_1[subj_idx], (n, 1)), d) * x_sc
+
+        p_hat = softmax(rho)
+
+        # Data likelihood
+        yl = pm.Categorical('yl', p=p_hat, observed=y)
+
+        # inference!
+        trace_kal_scram = pm.sample(**sample_kwargs)
+
+    return hier_sticky, trace_kal_scram
+
+
 def construct_sticky_choice(raw_data, n_arms=8):
     x_sc = []
     for subj in set(raw_data['id']):
@@ -550,82 +582,80 @@ def run_save_models(model_matrix, name_tag, sample_kwargs=None):
         return _loo, _params
 
 
-    # # GP-RBF
-    #
-    # rbf_params = ['mu_beta_rbf_mean', 'mu_beta_rbf_stdv', 'mu_beta_stick',
-    #               'sigma_rbf_means', 'sigma_rbf_stdev', 'sigma_stick']
-    #
-    # model_loo, model_params = sample_model(sample_hier_rbf, rbf_params, 'GP-RBF')
-    # model_params.to_pickle('Data/model_fits/model_params_%s_rbf.pkl' % name_tag)
-    # model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
-    #
-    # # Linear Regression
-    #
-    # lin_params = ['mu_beta_lin_mean', 'mu_beta_lin_stdv', 'mu_beta_stick',
-    #               'sigma_lin_means', 'sigma_lin_stdev', 'sigma_stick']
-    # _loo, model_params = sample_model(sample_hier_lin, lin_params, 'Lin-Reg')
-    # model_params.to_pickle('Data/model_fits/model_params_%s_lin.pkl' % name_tag)
-    # model_loo = pd.concat([model_loo, _loo])
-    # model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
-    #
-    # # Clustering model
-    #
-    # cls_params = ['mu_beta_cls_mean','mu_beta_cls_stdv','mu_beta_stick',
-    #               'sigma_cls_means','sigma_cls_stdev','sigma_stick']
-    # _loo, model_params = sample_model(sample_hier_cls, cls_params, 'Clustering')
-    # model_params.to_pickle('Data/model_fits/model_params_%s_cls.pkl' % name_tag)
-    # model_loo = pd.concat([model_loo, _loo])
-    # model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
+    # GP-RBF
+
+    rbf_params = ['mu_beta_rbf_mean', 'mu_beta_rbf_stdv', 'mu_beta_stick',
+                  'sigma_rbf_means', 'sigma_rbf_stdev', 'sigma_stick']
+
+    model_loo, model_params = sample_model(sample_hier_rbf, rbf_params, 'GP-RBF')
+    model_params.to_pickle('Data/model_fits/model_params_%s_rbf.pkl' % name_tag)
+    model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
+
+    # Linear Regression
+
+    lin_params = ['mu_beta_lin_mean', 'mu_beta_lin_stdv', 'mu_beta_stick',
+                  'sigma_lin_means', 'sigma_lin_stdev', 'sigma_stick']
+    _loo, model_params = sample_model(sample_hier_lin, lin_params, 'Lin-Reg')
+    model_params.to_pickle('Data/model_fits/model_params_%s_lin.pkl' % name_tag)
+    model_loo = pd.concat([model_loo, _loo])
+    model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
+
+    # Clustering model
+
+    cls_params = ['mu_beta_cls_mean','mu_beta_cls_stdv','mu_beta_stick',
+                  'sigma_cls_means','sigma_cls_stdev','sigma_stick']
+    _loo, model_params = sample_model(sample_hier_cls, cls_params, 'Clustering')
+    model_params.to_pickle('Data/model_fits/model_params_%s_cls.pkl' % name_tag)
+    model_loo = pd.concat([model_loo, _loo])
+    model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
 
     # Kalman Filter
-    #
-    # kal_params = ['mu_beta_kal_mean','mu_beta_kal_stdv','mu_beta_stick',
-    #               'sigma_kal_means','sigma_kal_stdev','sigma_stick']
-    # _loo, model_params = sample_model(sample_hier_kal, kal_params, 'Kalman')
-    # model_params.to_pickle('Data/model_fits/model_params_%s_kal.pkl' % name_tag)
-    # model_loo = pd.concat([model_loo, _loo])
-    # model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
 
-    model_loo = pd.read_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
+    kal_params = ['mu_beta_kal_mean','mu_beta_kal_stdv','mu_beta_stick',
+                  'sigma_kal_means','sigma_kal_stdev','sigma_stick']
+    _loo, model_params = sample_model(sample_hier_kal, kal_params, 'Kalman')
+    model_params.to_pickle('Data/model_fits/model_params_%s_kal.pkl' % name_tag)
+    model_loo = pd.concat([model_loo, _loo])
+    model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
 
     # Kalman Filter w/o sticky choice
-    #
-    # kal_nosticky_params = ['mu_beta_kal_mean','mu_beta_kal_stdv',
-    #               'sigma_kal_means','sigma_kal_stdev']
-    # _loo, model_params = sample_model(sample_hier_kal_nosticky, kal_nosticky_params, 'Kalman w/SC')
-    # model_params.to_pickle('Data/model_fits/model_params_%s_kal_nosticky.pkl' % name_tag)
-    # model_loo = pd.concat([model_loo, _loo])
-    # model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
 
-    # # Bayesian GP
-    #
-    # bgp_params = ['mu_beta_bgp_mean','mu_beta_bgp_stdv','mu_beta_stick',
-    #               'sigma_bgp_means','sigma_bgp_stdev','sigma_stick']
-    # _loo, model_params = sample_model(sample_hier_bayes_gp, bgp_params, 'Bayesian-GP')
-    # model_params.to_pickle('Data/model_fits/model_params_%s_bgp.pkl' % name_tag)
-    # model_loo = pd.concat([model_loo, _loo])
-    # model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
-    #
-    # # GP-RBF + Clustering
-    #
-    # rbf_cls_params = ['mu_beta_rbf_mean', 'mu_beta_rbf_stdv', 'mu_beta_cls_mean',
-    #                   'mu_beta_cls_stdv', 'mu_beta_stick', 'sigma_rbf_means',
-    #                   'sigma_rbf_stdev', 'sigma_cls_means','sigma_cls_stdev', 'sigma_stick']
-    # _loo, model_params = sample_model(sample_hier_rbf_cls, rbf_cls_params, 'GP-RBF/Clustering')
-    # model_params.to_pickle('Data/model_fits/model_params_%s_rbf_cls.pkl' % name_tag)
-    # model_loo = pd.concat([model_loo, _loo])
-    # model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
-    #
-    # # Lin Reg + Clustering
-    #
-    # lin_cls_params = ['mu_beta_lin_mean', 'mu_beta_lin_stdv', 'mu_beta_cls_mean',
-    #                   'mu_beta_cls_stdv', 'mu_beta_stick', 'sigma_lin_means',
-    #                   'sigma_lin_stdev', 'sigma_cls_means', 'sigma_cls_stdev','sigma_stick']
-    # _loo, model_params = sample_model(sample_heir_lin_cls, lin_cls_params, 'Linear/Clustering')
-    # model_params.to_pickle('Data/model_fits/model_params_%s_lin_cls.pkl' % name_tag)
-    # model_loo = pd.concat([model_loo, _loo])
-    # model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
-    #
+    kal_nosticky_params = ['mu_beta_kal_mean','mu_beta_kal_stdv',
+                  'sigma_kal_means','sigma_kal_stdev']
+    _loo, model_params = sample_model(sample_hier_kal_nosticky, kal_nosticky_params, 'Kalman w/SC')
+    model_params.to_pickle('Data/model_fits/model_params_%s_kal_nosticky.pkl' % name_tag)
+    model_loo = pd.concat([model_loo, _loo])
+    model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
+
+    # Bayesian GP
+
+    bgp_params = ['mu_beta_bgp_mean','mu_beta_bgp_stdv','mu_beta_stick',
+                  'sigma_bgp_means','sigma_bgp_stdev','sigma_stick']
+    _loo, model_params = sample_model(sample_hier_bayes_gp, bgp_params, 'Bayesian-GP')
+    model_params.to_pickle('Data/model_fits/model_params_%s_bgp.pkl' % name_tag)
+    model_loo = pd.concat([model_loo, _loo])
+    model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
+
+    # GP-RBF + Clustering
+
+    rbf_cls_params = ['mu_beta_rbf_mean', 'mu_beta_rbf_stdv', 'mu_beta_cls_mean',
+                      'mu_beta_cls_stdv', 'mu_beta_stick', 'sigma_rbf_means',
+                      'sigma_rbf_stdev', 'sigma_cls_means','sigma_cls_stdev', 'sigma_stick']
+    _loo, model_params = sample_model(sample_hier_rbf_cls, rbf_cls_params, 'GP-RBF/Clustering')
+    model_params.to_pickle('Data/model_fits/model_params_%s_rbf_cls.pkl' % name_tag)
+    model_loo = pd.concat([model_loo, _loo])
+    model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
+
+    # Lin Reg + Clustering
+
+    lin_cls_params = ['mu_beta_lin_mean', 'mu_beta_lin_stdv', 'mu_beta_cls_mean',
+                      'mu_beta_cls_stdv', 'mu_beta_stick', 'sigma_lin_means',
+                      'sigma_lin_stdev', 'sigma_cls_means', 'sigma_cls_stdev','sigma_stick']
+    _loo, model_params = sample_model(sample_heir_lin_cls, lin_cls_params, 'Linear/Clustering')
+    model_params.to_pickle('Data/model_fits/model_params_%s_lin_cls.pkl' % name_tag)
+    model_loo = pd.concat([model_loo, _loo])
+    model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
+
     # GP-RBF + Kalman
 
     rbf_kal_params = ['mu_beta_rbf_mean', 'mu_beta_rbf_stdv', 'mu_beta_kal_mean',
@@ -635,14 +665,21 @@ def run_save_models(model_matrix, name_tag, sample_kwargs=None):
     model_params.to_pickle('Data/model_fits/model_params_%s_rbf_kal.pkl' % name_tag)
     model_loo = pd.concat([model_loo, _loo])
     model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
-    #
-    # # Scrambled
-    # scram_params = ['mu_beta_kal_sc_mean', 'mu_beta_kal_sc_stdv', 'mu_beta_stick',
-    #                   'sigma_kal_sc_means', 'sigma_kal_sc_stdev', 'sigma_stick']
-    # _loo, model_params = sample_model(sample_heir_scram_kal, scram_params, 'Scrambled')
-    # model_params.to_pickle('Data/model_fits/model_params_%s_scram.pkl' % name_tag)
-    # model_loo = pd.concat([model_loo, _loo])
-    # model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
+
+    # Scrambled
+    scram_params = ['mu_beta_kal_sc_mean', 'mu_beta_kal_sc_stdv', 'mu_beta_stick',
+                      'sigma_kal_sc_means', 'sigma_kal_sc_stdev', 'sigma_stick']
+    _loo, model_params = sample_model(sample_heir_scram_kal, scram_params, 'Scrambled')
+    model_params.to_pickle('Data/model_fits/model_params_%s_scram.pkl' % name_tag)
+    model_loo = pd.concat([model_loo, _loo])
+    model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
+
+    # Sticky
+    sticky_params = ['mu_beta_stick', 'sigma_stick']
+    _loo, model_params = sample_model(sample_sticky_only, sticky_params, 'Sticky-Choice')
+    model_params.to_pickle('Data/model_fits/model_params_%s_scram.pkl' % name_tag)
+    model_loo = pd.concat([model_loo, _loo])
+    model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
 
 
 def make_debug_matrix(model_matrix, n_debug=8):
@@ -745,7 +782,6 @@ def exp_linear(sample_kwargs=None, debug=False):
     print "Experiment 1, Running %d subjects" % model_matrix['n_subj']
     run_save_models(model_matrix, name_tag='exp_lin', sample_kwargs=sample_kwargs)
 
-
 def exp_scrambled(sample_kwargs=None, debug=False):
     clustering_data = pd.read_pickle('Data/exp_scrambled/exp_scram_clustering_means_std.pkl')
     clustering_data.index = range(len(clustering_data))
@@ -826,6 +862,7 @@ def exp_scrambled(sample_kwargs=None, debug=False):
     print "Experiment Scrambled, Running %d subjects" % model_matrix['n_subj']
     run_save_models(model_matrix, name_tag='exp_scram', sample_kwargs=sample_kwargs)
 
+
 def exp_change_point(sample_kwargs=None, debug=False):
     clustering_data = pd.read_pickle('Data/exp_changepoint/exp_cp_clustering_means_std.pkl')
     clustering_data.index = range(len(clustering_data))
@@ -905,6 +942,7 @@ def exp_change_point(sample_kwargs=None, debug=False):
 
     print "Experiment Change Point, Running %d subjects" % model_matrix['n_subj']
     run_save_models(model_matrix, name_tag='exp_cp', sample_kwargs=sample_kwargs)
+
 
 def exp_shifted(sample_kwargs=None, debug=False):
     clustering_data = pd.read_pickle('Data/exp_shifted/exp_shifted_clustering_means_std.pkl')
@@ -1071,8 +1109,8 @@ def exp_srs(sample_kwargs=None, debug=False):
 
 if __name__ == "__main__":
 
-    # exp_linear()
-    # exp_scrambled()
+    exp_linear()
+    exp_scrambled()
     exp_change_point()
-    # exp_shifted()
-    # exp_srs()
+    exp_shifted()
+    exp_srs()
