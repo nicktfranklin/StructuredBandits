@@ -32,8 +32,8 @@ predictors of the next trial.
 ## Description of Bayesian Regression
 Hierarchical Bayesian linear regression is used to fit the decision function to mean and standard 
 deviation of each arm of the bandit tasks. These means and standard deviations are separately estimated
-(discussed below). All of the Bayesian models are defined in the file `fit_clustering.py` using the PyMC3
-(LINK GOES HERE) library.
+(discussed below). All of the Bayesian models are defined in the file `fit_clustering.py` using the [PyMC3
+ library](https://docs.pymc.io).
 
 Each Bayesian model is more or less the same and the script includes preprocessing to unify the format 
 of each of the tasks. The logic of the model is similar to multivariate regression, and we refer to the 
@@ -102,4 +102,5 @@ Below is the code for inference:
         # inference!
         trace_kal = pm.sample(**sample_kwargs)
 ```
-Most of this is automatically determined in PyMC3 and we encourage you to look at the documentation for more details!
+Most of this is automatically determined in PyMC3 and we encourage you to look at [the documentation here](https://docs.pymc.io) 
+for more details!
