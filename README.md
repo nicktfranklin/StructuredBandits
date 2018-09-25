@@ -1,7 +1,7 @@
 # StructuredBandits
-The model fits for the structured bandits task / analyses . The main file of interest is
-`Model Fits and Parameter plots.ipynb`, which is a jupyter notebook with the results plotted. `Posterior Predictive Checks.ipynb` also has figures used
-in the paper.
+The model fits for the structured bandits task / analyses. The main file of interest is
+`Model Fits and Parameter plots.ipynb`, which is a jupyter notebook with the results plotted.
+
 
 Note: Many of these files will take days to run on a modern laptop.
 
@@ -27,3 +27,79 @@ and standard deviations for the GPs, which required several days on a computing 
 a Gaussian process was fit to each trial for each subject given all of the observations the subject
 had seen in that round of trials. Then, the predicted mean and stdev of the process were used as
 predictors of the next trial.
+
+
+## Description of Bayesian Regression
+Hierarchical Bayesian linear regression is used to fit the decision function to mean and standard 
+deviation of each arm of the bandit tasks. These means and standard deviations are separately estimated
+(discussed below). All of the Bayesian models are defined in the file `fit_clustering.py` using the PyMC3
+(LINK GOES HERE) library.
+
+Each Bayesian model is more or less the same and the script includes preprocessing to unify the format 
+of each of the tasks. The logic of the model is similar to multivariate regression, and we refer to the 
+decision variables as "regression coefficents" and the values as "predictors" accordingly.
+
+For each subject, a predictor vector is prepared for each model's mean and standard
+deviation for each trial. In addition a one-hot vector for sticky choice is also prepared. For each subject,
+a single (scalar valued) regression coefficient is multiplied to these vectors before they are added and 
+passed through a softmax function.  These parameters are fit 'hierachically', meaning we assume a group 
+distribution over each parameter.
+
+Example code for fitting the Kalman filter is provided below:
+```buildoutcfg
+    with pm.Model() as hier_kal:
+        mu_1 = pm.Normal('mu_beta_kal_mean', mu=0., sd=100.)
+        mu_2 = pm.Normal('mu_beta_kal_stdv', mu=0., sd=100.)
+        mu_3 = pm.Normal('mu_beta_stick',    mu=0., sd=100.)
+
+        sigma_1 = pm.HalfCauchy('sigma_kal_means', beta=100)
+        sigma_2 = pm.HalfCauchy('sigma_kal_stdev', beta=100)
+        sigma_3 = pm.HalfCauchy('sigma_stick',     beta=100)
+
+        b_1 = pm.Normal('beta_kal_mu',  mu=mu_1, sd=sigma_1, shape=n_subj)
+        b_2 = pm.Normal('beta_kal_std', mu=mu_2, sd=sigma_2, shape=n_subj)
+        b_3 = pm.Normal('beta_sc',      mu=mu_3, sd=sigma_3, shape=n_subj)
+
+        rho = \
+            tt.tile(tt.reshape(b_1[subj_idx], (n, 1)), d) * x_mu_kal + \
+            tt.tile(tt.reshape(b_2[subj_idx], (n, 1)), d) * x_sd_kal + \
+            tt.tile(tt.reshape(b_3[subj_idx], (n, 1)), d) * x_sc
+        p_hat = softmax(rho)
+
+        # Data likelihood
+        yl = pm.Categorical('yl', p=p_hat, observed=y)
+
+        # inference!
+        trace_kal = pm.sample(**sample_kwargs)
+```
+
+In this model, each of the three regression coefficients (`b_1`, `b_2` & `b_3` for the means, standard 
+deviations and sticky choice, respectively) is assumed to be normally distributed.  The means 
+(`mu_1`, `mu_2`, `mu_3`) and standard deviations  (`sigma_1`, `sigma_2`, `sigma_3`) 
+of these distributions are group level parameters and can be interpreted as group effects. We've 
+assumed vague priors for these group level distributions, with the group means assumed to be 
+normally distributed and the standard deviations assumed to be distribued via a Half-cauchy 
+distribution (c.f. Gelman [REFERENCE] for more details)
+
+PyMC3 currently uses the Theano tensor library to underly its calculatios. Because we have vectors as predictors,
+ we have to use vector math to get the right representation for the softmax. The following codes casts the 
+ regresion coefficients into an n_arm by n_trial matrix so and uses element-wise multiplication to create the input
+ to the softmax.
+
+```buildoutcfg
+        rho = \
+            tt.tile(tt.reshape(b_1[subj_idx], (n, 1)), d) * x_mu_kal + \
+            tt.tile(tt.reshape(b_2[subj_idx], (n, 1)), d) * x_sd_kal + \
+            tt.tile(tt.reshape(b_3[subj_idx], (n, 1)), d) * x_sc
+        p_hat = softmax(rho)
+```
+
+Below is the code for inference:
+```buildoutcfg
+        # Data likelihood
+        yl = pm.Categorical('yl', p=p_hat, observed=y)
+
+        # inference!
+        trace_kal = pm.sample(**sample_kwargs)
+```
+Most of this is automatically determined in PyMC3 and we encourage you to look at the documentation for more details!

@@ -618,15 +618,6 @@ def run_save_models(model_matrix, name_tag, sample_kwargs=None):
     model_loo = pd.concat([model_loo, _loo])
     model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
 
-    # Kalman Filter w/o sticky choice
-
-    kal_nosticky_params = ['mu_beta_kal_mean','mu_beta_kal_stdv',
-                  'sigma_kal_means','sigma_kal_stdev']
-    _loo, model_params = sample_model(sample_hier_kal_nosticky, kal_nosticky_params, 'Kalman w/SC')
-    model_params.to_pickle('Data/model_fits/model_params_%s_kal_nosticky.pkl' % name_tag)
-    model_loo = pd.concat([model_loo, _loo])
-    model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
-
     # Bayesian GP
 
     bgp_params = ['mu_beta_bgp_mean','mu_beta_bgp_stdv','mu_beta_stick',
@@ -663,14 +654,6 @@ def run_save_models(model_matrix, name_tag, sample_kwargs=None):
                       'sigma_rbf_stdev', 'sigma_kal_means', 'sigma_rbf_stdev', 'sigma_stick']
     _loo, model_params = sample_model(sample_heir_rbf_kal, rbf_kal_params, 'GP-RBF/Kalman')
     model_params.to_pickle('Data/model_fits/model_params_%s_rbf_kal.pkl' % name_tag)
-    model_loo = pd.concat([model_loo, _loo])
-    model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
-
-    # Scrambled
-    scram_params = ['mu_beta_kal_sc_mean', 'mu_beta_kal_sc_stdv', 'mu_beta_stick',
-                      'sigma_kal_sc_means', 'sigma_kal_sc_stdev', 'sigma_stick']
-    _loo, model_params = sample_model(sample_heir_scram_kal, scram_params, 'Scrambled')
-    model_params.to_pickle('Data/model_fits/model_params_%s_scram.pkl' % name_tag)
     model_loo = pd.concat([model_loo, _loo])
     model_loo.to_pickle('Data/model_fits/model_fits_%s.pkl' % name_tag)
 
@@ -781,6 +764,7 @@ def exp_linear(sample_kwargs=None, debug=False):
 
     print "Experiment 1, Running %d subjects" % model_matrix['n_subj']
     run_save_models(model_matrix, name_tag='exp_lin', sample_kwargs=sample_kwargs)
+
 
 def exp_scrambled(sample_kwargs=None, debug=False):
     clustering_data = pd.read_pickle('Data/exp_scrambled/exp_scram_clustering_means_std.pkl')
@@ -942,7 +926,6 @@ def exp_change_point(sample_kwargs=None, debug=False):
 
     print "Experiment Change Point, Running %d subjects" % model_matrix['n_subj']
     run_save_models(model_matrix, name_tag='exp_cp', sample_kwargs=sample_kwargs)
-
 
 def exp_shifted(sample_kwargs=None, debug=False):
     clustering_data = pd.read_pickle('Data/exp_shifted/exp_shifted_clustering_means_std.pkl')
@@ -1108,9 +1091,8 @@ def exp_srs(sample_kwargs=None, debug=False):
 
 
 if __name__ == "__main__":
-
-    exp_linear()
-    exp_scrambled()
+    # exp_linear()
+    # exp_scrambled()
     exp_change_point()
-    exp_shifted()
-    exp_srs()
+    # exp_shifted()
+    # exp_srs()

@@ -37,6 +37,7 @@ def enumerate_assignments(max_context_number):
         cluster_assignments = augment_assignments(cluster_assignments, contextNumber)
     return cluster_assignments
 
+
 def count_hypothesis_space(n_contexts):
     """
      Determine the number of unique hypotheses in the clustering space
