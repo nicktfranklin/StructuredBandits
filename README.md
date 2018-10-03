@@ -1,9 +1,23 @@
-# StructuredBandits
-The model fits for the structured bandits task / analyses. The main file of interest is
+# Finding Structure in Multi-Armed Bandits
+This repository contains the code for model fitting in our paper "Finding Structure in Multi-Armed Bandits". 
+
+Our behavioral analyises are hosted seperately here:
+* Experiment 1:  https://ericschulz.github.io/explin/exp1.html
+* Experiment 2: https://ericschulz.github.io/explin/exp2.html
+* Experiment 3: https://ericschulz.github.io/explin/exp3.html
+* Experiment 4: https://ericschulz.github.io/explin/exp4.html
+* Experiment 5: https://ericschulz.github.io/explin/exp5.html
+
+
+The experiments themselves can be played by clicking the following links:
+* Experiment 1: https://ericschulz.github.io/explin/index1.html
+* Experiment 2: https://ericschulz.github.io/explin/index2.html
+* Experiment 3: https://ericschulz.github.io/explin/index3.html
+* Experiment 4: https://ericschulz.github.io/explin/index4.html
+* Experiment 5: https://ericschulz.github.io/explin/index5.html
+
+For the model fits, the main file of interest is
 `Model Fits and Parameter plots.ipynb`, which is a jupyter notebook with the results plotted.
-
-
-Note: Many of these files will take days to run on a modern laptop.
 
 Processing steps (run in order):
 1. `fit_clustering.py`: estimates the best alpha value for the clustering model for
@@ -19,6 +33,9 @@ parameter estimation to each of the 5 experiments, saving the model fit statisti
 5. `run_ppc.py`: re-fits the GP-RBF/Clustering model and generates a sample
 from the posterior predictive distribution. Currently runs 2 out of 5 experiments
 (the linear and the shifted experiments)
+
+*N.B. Many of these files will take days to run on a modern laptop.*
+
 
 The model fitting uses means and standard deviations output from a Gaussian Process model,
 which are stored in the folders `Data/EXP_NAME`, as are the raw data files and the intermediate means
@@ -79,7 +96,7 @@ deviations and sticky choice, respectively) is assumed to be normally distribute
 of these distributions are group level parameters and can be interpreted as group effects. We've 
 assumed vague priors for these group level distributions, with the group means assumed to be 
 normally distributed and the standard deviations assumed to be distribued via a Half-cauchy 
-distribution (c.f. Gelman [REFERENCE] for more details)
+distribution (c.f. [Gelman 2006](https://projecteuclid.org/download/pdf_1/euclid.ba/1340371048) for more details)
 
 PyMC3 currently uses the Theano tensor library to underly its calculatios. Because we have vectors as predictors,
  we have to use vector math to get the right representation for the softmax. The following codes casts the 
